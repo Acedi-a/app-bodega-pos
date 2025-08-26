@@ -5,6 +5,7 @@ import { PublicRoute } from './components/PublicRoute'
 import { MainLayout } from './components/dashboard/MainLayout'
 import { LoginPage } from './pages/login/LoginPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
+import { ClientesPage } from './pages/ClientesPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
 
@@ -31,7 +32,8 @@ function App() {
           }>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
-            {/* Aquí se agregarán más rutas como clientes, proveedores, etc. */}
+            <Route path="clientes" element={<ClientesPage />} />
+            {/* Aquí se agregarán más rutas como proveedores, productos, etc. */}
           </Route>
 
           {/* Ruta de fallback */}
