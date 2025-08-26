@@ -201,6 +201,11 @@ class ClienteService {
         .select(`
           id,
           activo,
+          tipos_tercero (
+            id,
+            clave,
+            nombre
+          ),
           cliente_info (
             deuda_actual,
             limite_credito
