@@ -56,8 +56,14 @@ class AuthService {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
-      if (authError) throw authError
-      if (!user) return { user: null, userProfile: null, error: null }
+      if (authError) {
+        console.error('Error de autenticación:', authError)
+        return { user: null, userProfile: null, error: authError }
+      }
+      
+      if (!user) {
+        return { user: null, userProfile: null, error: null }
+      }
 
       // Obtener perfil del usuario desde la tabla usuarios
       const { data: userProfile, error: profileError } = await supabase
@@ -74,21 +80,31 @@ class AuthService {
         .eq('id', user.id)
         .maybeSingle() // Cambio: usar maybeSingle en lugar de single
 
-      if (profileError) throw profileError
+      if (profileError) {
+        console.error('Error obteniendo perfil de usuario:', profileError)
+        return { user, userProfile: null, error: profileError }
+      }
 
       // Si no existe perfil, crear uno básico
       if (!userProfile) {
         console.log('Perfil no encontrado, creando perfil básico...')
         
         // Primero obtener el rol de administrador por defecto
-        const { data: adminRole } = await supabase
+        const { data: adminRole, error: roleError } = await supabase
           .from('roles')
           .select('id')
           .eq('clave', 'administrador')
           .single()
 
+        if (roleError) {
+          console.error('Error obteniendo rol administrador:', roleError)
+          return { user, userProfile: null, error: roleError }
+        }
+
         if (!adminRole) {
-          throw new Error('Rol de administrador no encontrado')
+          const error = new Error('Rol de administrador no encontrado')
+          console.error(error.message)
+          return { user, userProfile: null, error }
         }
 
         // Crear perfil básico
@@ -113,7 +129,10 @@ class AuthService {
           `)
           .single()
 
-        if (createError) throw createError
+        if (createError) {
+          console.error('Error creando perfil de usuario:', createError)
+          return { user, userProfile: null, error: createError }
+        }
 
         return { user, userProfile: newProfile, error: null }
       }

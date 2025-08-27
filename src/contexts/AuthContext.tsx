@@ -28,74 +28,97 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<AuthUser['role']>(null)
   const [loading, setLoading] = useState(true)
 
-  const loadUser = async () => {
-    try {
-      const { user: authUser, userProfile } = await authService.getCurrentUser()
-      
-      if (authUser && userProfile) {
-        setUser(userProfile)
-        setRole(userProfile.roles)
-      } else {
-        setUser(null)
-        setRole(null)
-      }
-    } catch (error) {
-      console.error('Error cargando usuario:', error)
-      setUser(null)
-      setRole(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    // Inicializar datos básicos
     const initializeApp = async () => {
-      await dbService.initializeBasicData()
-      // Cargar usuario inicial
-      await loadUser()
-    }
+      setLoading(true);
+      try {
+        // Primero, intentar obtener el usuario.
+        const { user: authUser, userProfile, error } = await authService.getCurrentUser();
 
-    initializeApp()
+        if (error && typeof error === 'object' && 'message' in error && (error as any).message !== 'Auth session missing!') {
+          console.error("Error en la sesión inicial:", error);
+        }
 
-    // Escuchar cambios de autenticación
-    const { data: { subscription } } = authService.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN') {
-        await loadUser()
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setRole(null)
-        setLoading(false)
+        if (authUser && userProfile) {
+          setUser(userProfile);
+          setRole(userProfile.roles);
+        } else {
+          setUser(null);
+          setRole(null);
+        }
+      } catch (e) {
+        console.error("Error inesperado en la inicialización:", e);
+        setUser(null);
+        setRole(null);
+      } finally {
+        // Asegurar que el estado de carga se desactiva sin importar el resultado
+        setLoading(false);
       }
-    })
+    };
 
-    return () => subscription.unsubscribe()
-  }, [])
+    initializeApp();
+    dbService.initializeBasicData(); // Ejecutar en segundo plano
+
+    // Escuchar cambios de autenticación para el futuro (login/logout)
+    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        setLoading(true);
+        const { user: authUser, userProfile } = await authService.getCurrentUser();
+        if (authUser && userProfile) {
+          setUser(userProfile);
+          setRole(userProfile.roles);
+        }
+        setLoading(false);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setRole(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { error } = await authService.signIn({ email, password })
-      if (!error) {
-        await loadUser()
+      const { error } = await authService.signIn({ email, password });
+      // El listener onAuthStateChange se encargará de actualizar el estado del usuario
+      if (error) {
+        setLoading(false); // Detener la carga si el inicio de sesión falla
       }
-      return { error }
-    } finally {
-      setLoading(false)
+      return { error };
+    } catch (e) {
+      setLoading(false);
+      return { error: e };
     }
-  }
+  };
 
   const signOut = async () => {
     setLoading(true)
     try {
       await authService.signOut()
     } finally {
+      // El listener onAuthStateChange se encargará de limpiar el estado
       setLoading(false)
     }
   }
 
   const refreshUser = async () => {
-    await loadUser()
+    setLoading(true);
+    try {
+      const { user: authUser, userProfile } = await authService.getCurrentUser();
+      if (authUser && userProfile) {
+        setUser(userProfile);
+        setRole(userProfile.roles);
+      } else {
+        setUser(null);
+        setRole(null);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   const value: AuthContextType = {

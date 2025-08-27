@@ -1,150 +1,129 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Wine, Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useAuth } from '../../contexts/AuthContext'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { Loader2, ArrowRight, Wine } from 'lucide-react';
 
 export const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
-  const { signIn, loading, user } = useAuth()
-  const navigate = useNavigate()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { signIn, loading, user } = useAuth();
+  const navigate = useNavigate();
 
-  // Redirigir si el usuario ya está autenticado
   useEffect(() => {
     if (user && !loading) {
-      navigate('/dashboard', { replace: true })
+      navigate('/dashboard', { replace: true });
     }
-  }, [user, loading, navigate])
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
+    e.preventDefault();
+    setError('');
     if (!email || !password) {
-      setError('Por favor complete todos los campos')
-      return
+      setError('Por favor, complete ambos campos.');
+      return;
     }
-
-    const { error } = await signIn(email, password)
+    const { error } = await signIn(email, password);
     if (error) {
-      console.error('Error de login:', error)
       if (error.message.includes('Invalid login credentials')) {
-        setError('Credenciales incorrectas. Verifique su email y contraseña.')
-      } else if (error.message.includes('PGRST116')) {
-        setError('Usuario no encontrado en el sistema. Contacte al administrador.')
+        setError('Credenciales incorrectas. Verifique su email y contraseña.');
       } else {
-        setError(error.message || 'Error al iniciar sesión. Intente nuevamente.')
+        setError('Error al iniciar sesión. Intente nuevamente más tarde.');
       }
-    } else {
-      console.log('Inicio de sesión exitoso:', email)
-      // Redirigir al dashboard después del login exitoso
-      navigate('/dashboard', { replace: true })
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="w-full h-full bg-repeat" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d97706' fill-opacity='0.05'%3E%3Cpath d='M30 30c0-16.5685 13.4315-30 30-30v30H30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+    <div className="min-h-screen w-full bg-[#1a1a1a] flex font-sans">
+      {/* Panel Izquierdo - Visual */}
+      <div className="w-1/3 bg-black hidden lg:flex flex-col justify-between p-12 bg-cover bg-center"
+           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1584916201218-6e313ce5a914?q=80&w=1974&auto=format&fit=crop')" }}>
+        <div className="z-10">
+          <h1 className="text-white text-4xl font-serif tracking-widest" style={{textShadow: '2px 2px 8px rgba(0,0,0,0.7)'}}>
+            BODEGA
+          </h1>
+          <h2 className="text-white text-4xl font-serif tracking-widest" style={{textShadow: '2px 2px 8px rgba(0,0,0,0.7)'}}>
+            PREMIUM
+          </h2>
+        </div>
+        <p className="text-white/50 text-xs z-10" style={{textShadow: '1px 1px 4px rgba(0,0,0,0.8)'}}>
+          Descubra la excelencia en cada botella. Una tradición de calidad y pasión por el vino.
+        </p>
       </div>
 
-      <div className="relative w-full max-w-md">
-        {/* Logo y título */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-600 to-red-700 rounded-full shadow-lg mb-4">
-            <Wine className="w-8 h-8 text-white" />
+      {/* Panel Derecho - Formulario */}
+      <div className="w-full lg:w-2/3 flex items-center justify-center p-8 lg:p-12 relative">
+        <div className="w-full max-w-md mx-auto">
+          <div className="mb-12 text-center lg:text-left">
+            <h3 className="text-4xl font-light text-white mb-2">Bienvenido</h3>
+            <p className="text-white/40">Inicie sesión para gestionar su bodega.</p>
+            <div className="lg:hidden mt-8">
+                <Wine className="text-amber-700/50 w-16 h-16 mx-auto"/>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bodega Premium</h1>
-          <p className="text-gray-600">Gestión integral de vinos de calidad</p>
-        </div>
 
-        {/* Formulario */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          {error && (
+            <div className="bg-red-900/50 border border-red-700/50 text-red-200 px-4 py-3 rounded-lg text-sm mb-6">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="relative border-b border-white/20 focus-within:border-amber-600 transition-colors duration-300">
+              <label htmlFor="email" className="absolute -top-3.5 text-xs text-white/50">
                 Correo Electrónico
               </label>
               <input
                 id="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 bg-white/50 placeholder-gray-400"
-                placeholder="ejemplo@bodega.com"
+                className="w-full bg-transparent text-white text-lg py-2 focus:outline-none"
                 disabled={loading}
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative border-b border-white/20 focus-within:border-amber-600 transition-colors duration-300">
+              <label htmlFor="password" className="absolute -top-3.5 text-xs text-white/50">
                 Contraseña
               </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 bg-white/50 placeholder-gray-400 pr-12"
-                  placeholder="Ingrese su contraseña"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  disabled={loading}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-transparent text-white text-lg py-2 focus:outline-none"
+                disabled={loading}
+              />
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-amber-600 to-red-700 text-white py-3 px-4 rounded-lg font-medium hover:from-amber-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Iniciando sesión...
-                </>
-              ) : (
-                'Iniciar Sesión'
-              )}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-16 bg-amber-700 text-white font-bold text-lg rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group"
+              >
+                {loading ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : (
+                  <>
+                    <span className="group-hover:translate-x-2 transition-transform duration-300">Iniciar Sesión</span>
+                    <ArrowRight className="w-6 h-6 ml-4 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              Sistema de gestión para bodegas de vinos premium
+          <div className="mt-12 text-center">
+            <p className="text-xs text-white/30">
+              © 2025 Bodega Premium. Todos los derechos reservados.
             </p>
-          </div>
-        </div>
-
-        {/* Decoración inferior */}
-        <div className="mt-8 text-center">
-          <div className="flex items-center justify-center space-x-2 text-gray-400">
-            <div className="w-12 h-px bg-gradient-to-r from-transparent to-amber-300"></div>
-            <Wine className="w-4 h-4" />
-            <div className="w-12 h-px bg-gradient-to-l from-transparent to-amber-300"></div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
