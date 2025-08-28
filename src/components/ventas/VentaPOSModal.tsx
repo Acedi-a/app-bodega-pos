@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { X, Plus, Minus, Trash2, ShoppingCart, Search, Calculator, CreditCard, User } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 import { ventaService } from '../../services/VentaService'
 import type { CarritoVenta, CarritoItem, CreateVentaData, MetodoPago, Cliente } from '../../types/ventas'
 import type { Producto } from '../../types/productos'
@@ -15,6 +16,7 @@ export const VentaPOSModal: React.FC<VentaPOSModalProps> = ({
   onClose,
   onSave
 }) => {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [carrito, setCarrito] = useState<CarritoVenta>({
@@ -67,6 +69,8 @@ export const VentaPOSModal: React.FC<VentaPOSModalProps> = ({
       
       setProductos(productosData.data)
       setMetodosPago(metodosData.data)
+      console.log("Listar metodos")
+      console.log("metodos: ", metodosData.data)
       setClientes(clientesData.data)
     } catch (error) {
       console.error('Error loading catalogs:', error)
@@ -168,14 +172,24 @@ export const VentaPOSModal: React.FC<VentaPOSModalProps> = ({
 
     setLoading(true)
     try {
+      // Verificar que tenemos un usuario autenticado
+      if (!user?.id) {
+        alert('Error: Usuario no autenticado. Por favor, vuelve a iniciar sesión.')
+        setLoading(false)
+        return
+      }
+
+      // Obtener el ID del estado 'completada'
+      const estadoCompletadaId = await ventaService.getEstadoCompletadaId()
+
       const ventaData: CreateVentaData = {
-        tercero_id: clienteId,
-        usuario_id: '00000000-0000-0000-0000-000000000000', // TODO: Obtener del contexto del usuario
+        tercero_id: clienteId || undefined, // Si no hay cliente, enviar undefined (se guardará como null)
+        usuario_id: user.id, // Usar el ID del usuario autenticado
         monto_total: carrito.total,
         descuento: carrito.descuento,
         impuesto: carrito.impuesto,
         metodo_pago_id: metodoPagoId,
-        estado_id: 1, // Completada
+        estado_id: estadoCompletadaId, // Usar el ID correcto del estado completada
         notas: notas || undefined,
         items: carrito.items.map(item => ({
           producto_id: item.producto_id,
@@ -185,13 +199,42 @@ export const VentaPOSModal: React.FC<VentaPOSModalProps> = ({
         }))
       }
 
-      await ventaService.createVenta(ventaData)
+      const result = await ventaService.createVenta(ventaData)
+      
+      if (result.error) {
+        // Manejar errores específicos
+        if (result.error.code === '23503') {
+          if (result.error.message.includes('usuario_id')) {
+            alert('Error: Usuario no encontrado en la base de datos. Contacta al administrador.')
+          } else if (result.error.message.includes('tercero_id')) {
+            alert('Error: Cliente no válido. Verifica la información del cliente.')
+          } else if (result.error.message.includes('metodo_pago_id')) {
+            alert('Error: Método de pago no válido.')
+          } else if (result.error.message.includes('estado_id')) {
+            alert('Error: Estado no válido.')
+          } else {
+            alert('Error: Referencias no válidas en la venta.')
+          }
+        } else {
+          alert(`Error al crear la venta: ${result.error.message}`)
+        }
+        return
+      }
+
+      // Si llegamos aquí, la venta se creó exitosamente
+      alert('Venta creada exitosamente')
       onSave()
       onClose()
       resetCarrito()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating venta:', error)
-      alert('Error al crear la venta')
+      
+      // Manejo de errores de red o inesperados
+      if (error?.message) {
+        alert(`Error inesperado: ${error.message}`)
+      } else {
+        alert('Error inesperado al crear la venta. Intenta nuevamente.')
+      }
     } finally {
       setLoading(false)
     }

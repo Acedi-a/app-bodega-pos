@@ -177,14 +177,7 @@ export const VentasPage: React.FC = () => {
                 <ShoppingCart className="w-4 h-4" />
                 Punto de Venta
               </button>
-              
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Nueva Venta
-              </button>
+            
             </div>
           </div>
         </div>

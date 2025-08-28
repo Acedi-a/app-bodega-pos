@@ -41,6 +41,7 @@ export const VentaModal: React.FC<VentaModalProps> = ({
   const [newItemCantidad, setNewItemCantidad] = useState(1)
   const [newItemPrecio, setNewItemPrecio] = useState(0)
 
+
   useEffect(() => {
     if (isOpen && venta) {
       setFormData({

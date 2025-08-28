@@ -548,6 +548,7 @@ class VentaService {
         .order('nombre')
 
       if (error) throw error
+      //console.log("metodos: ", data)
 
       return { data: data || [] }
     } catch (error) {
@@ -570,6 +571,24 @@ class VentaService {
     } catch (error) {
       console.error('Error obteniendo estados de venta:', error)
       return { data: [] }
+    }
+  }
+
+  // Obtener ID del estado por defecto para ventas completadas
+  async getEstadoCompletadaId(): Promise<number> {
+    try {
+      const { data, error } = await supabase
+        .from('estados')
+        .select('id')
+        .eq('categoria', 'venta')
+        .eq('clave', 'completada')
+        .single()
+
+      if (error) throw error
+      return data?.id || 1 // fallback a 1 si no encuentra
+    } catch (error) {
+      console.error('Error obteniendo estado completada:', error)
+      return 1 // fallback
     }
   }
 
