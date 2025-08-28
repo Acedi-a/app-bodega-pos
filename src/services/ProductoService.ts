@@ -54,9 +54,11 @@ class ProductoService {
         query = query.eq('activo', filter.activo)
       }
 
-      if (filter.stock_bajo) {
-        query = query.filter('stock', 'lte', 'stock_minimo')
-      }
+      // TODO: Implementar con vista productos_con_alerta en el futuro
+      // Por ahora filtramos en el cliente
+      // if (filter.stock_bajo) {
+      //   query = query.filter('stock', 'lte', 'stock_minimo')
+      // }
 
       if (filter.precio_min) {
         query = query.gte('precio', filter.precio_min)
@@ -83,9 +85,11 @@ class ProductoService {
         countQuery = countQuery.eq('activo', filter.activo)
       }
 
-      if (filter.stock_bajo) {
-        countQuery = countQuery.filter('stock', 'lte', 'stock_minimo')
-      }
+      // TODO: Implementar con vista productos_con_alerta en el futuro
+      // Por ahora filtramos en el cliente
+      // if (filter.stock_bajo) {
+      //   countQuery = countQuery.filter('stock', 'lte', 'stock_minimo')
+      // }
 
       if (filter.precio_min) {
         countQuery = countQuery.gte('precio', filter.precio_min)
@@ -244,18 +248,24 @@ class ProductoService {
         .from('productos')
         .select('*', { count: 'exact', head: true })
 
-      // Productos activos
-      const { count: productosActivos } = await supabase
-        .from('productos')
-        .select('*', { count: 'exact', head: true })
-        .eq('activo', true)
 
       // Productos con stock bajo
-      const { count: productosStockBajo } = await supabase
+      // TODO: Implementar con vista productos_con_alerta en el futuro
+      // const { count: productosStockBajo } = await supabase
+      //   .from('productos')
+      //   .select('*', { count: 'exact', head: true })
+      //   .filter('stock', 'lte', 'stock_minimo')
+      //   .eq('activo', true)
+      
+      // Por ahora filtramos en el cliente
+      const { data: productosActivos } = await supabase
         .from('productos')
-        .select('*', { count: 'exact', head: true })
-        .filter('stock', 'lte', 'stock_minimo')
+        .select('stock, stock_minimo')
         .eq('activo', true)
+      
+      const productosStockBajo = productosActivos?.filter(
+        producto => producto.stock <= (producto.stock_minimo || 0)
+      ).length || 0
 
       // Valor total del inventario
       const { data: inventarioData } = await supabase
@@ -292,7 +302,7 @@ class ProductoService {
 
       const stats: ProductoStats = {
         totalProductos: totalProductos || 0,
-        productosActivos: productosActivos || 0,
+        productosActivos: productosActivos?.length || 0,
         productosStockBajo: productosStockBajo || 0,
         valorInventario: Math.round(valorInventario * 100) / 100,
         categoriasPrincipales
@@ -578,41 +588,7 @@ class ProductoService {
     }
   }
 
-  // Verificar productos con stock bajo
-  async getProductosStockBajo(): Promise<{ data: Producto[] }> {
-    try {
-      const { data, error } = await supabase
-        .from('productos')
-        .select(`
-          *,
-          categorias!categoria_id (
-            id,
-            nombre,
-            descripcion
-          ),
-          unidades_medida!unidad_medida_id (
-            id,
-            clave,
-            nombre,
-            simbolo
-          )
-        `)
-        .eq('activo', true)
-        .order('stock', { ascending: true })
-
-      if (error) throw error
-
-      // Filtrar productos con stock bajo en el cliente
-      const productosStockBajo = data?.filter(producto => 
-        producto.stock <= (producto.stock_minimo || 0)
-      ) || []
-
-      return { data: productosStockBajo }
-    } catch (error) {
-      console.error('Error obteniendo productos con stock bajo:', error)
-      return { data: [] }
-    }
-  }
+  // Verificar productos con stock bajo\n  // TODO: Implementar con vista productos_con_alerta en el futuro\n  async getProductosStockBajo(): Promise<{ data: Producto[] }> {\n    try {\n      const { data, error } = await supabase\n        .from('productos')\n        .select(`\n          *,\n          categorias!categoria_id (\n            id,\n            nombre,\n            descripcion\n          ),\n          unidades_medida!unidad_medida_id (\n            id,\n            clave,\n            nombre,\n            simbolo\n          )\n        `)\n        .eq('activo', true)\n        .order('stock', { ascending: true })\n\n      if (error) throw error\n\n      // Filtrar productos con stock bajo en el cliente\n      const productosStockBajo = data?.filter(producto => \n        producto.stock <= (producto.stock_minimo || 0)\n      ) || []\n\n      return { data: productosStockBajo }\n    } catch (error) {\n      console.error('Error obteniendo productos con stock bajo:', error)\n      return { data: [] }\n    }\n  }
 }
 
 export const productoService = new ProductoService()

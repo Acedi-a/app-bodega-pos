@@ -24,6 +24,7 @@ El sistema está **funcionando correctamente** con las siguientes característic
 - ✅ Layout principal con navegación
 - ✅ Gestión de roles y permisos
 - ✅ Herramientas de debug incluidas
+- ✅ Gestión de productos con stock bajo (implementación temporal en cliente)
 
 ## 🔧 **Para Probar el Sistema:**
 
@@ -50,6 +51,9 @@ En Supabase Dashboard > Authentication:
 - `/dashboard` - Dashboard principal (protegido)
 - `/debug` - Herramientas de diagnóstico
 
+### 5. **Mejoras Planificadas**
+- 🔄 Optimización de consultas de productos con stock bajo (usando vistas en Supabase)
+
 ## 📋 **Próximos Módulos por Implementar:**
 
 ### 📊 **Fase 2 - Módulos de Negocio**
@@ -67,6 +71,7 @@ En Supabase Dashboard > Authentication:
    - Catálogo de vinos
    - Gestión de precios y costos
    - Categorización de productos
+   - ⚠️ Alertas de stock bajo (mejora pendiente con vistas de Supabase)
 
 4. **Inventario** (`/inventario`)
    - Control de stock en tiempo real
