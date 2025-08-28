@@ -44,6 +44,12 @@ export const VentaModal: React.FC<VentaModalProps> = ({
 
   useEffect(() => {
     if (isOpen && venta) {
+      console.log('🔄 Cargando datos de venta para edición:', {
+        ventaId: venta.id,
+        itemsOriginales: venta.venta_items?.length || 0,
+        items: venta.venta_items
+      })
+      
       setFormData({
         tercero_id: venta.tercero_id,
         monto_total: venta.monto_total,
@@ -53,7 +59,10 @@ export const VentaModal: React.FC<VentaModalProps> = ({
         impuesto: venta.impuesto,
         notas: venta.notas || ''
       })
-      setVentaItems(venta.venta_items || [])
+      
+      // Crear una copia fresca de los items para evitar referencias compartidas
+      const itemsCopy = (venta.venta_items || []).map(item => ({ ...item }))
+      setVentaItems(itemsCopy)
       loadCatalogs()
     } else if (!venta) {
       // Resetear para nueva venta
@@ -91,8 +100,11 @@ export const VentaModal: React.FC<VentaModalProps> = ({
   const handleAddProduct = () => {
     if (!selectedProducto) return
 
+    // Generar ID temporal único (mayor a 1000000 para identificarlo fácilmente)
+    const tempId = 1000000 + Date.now() + Math.floor(Math.random() * 1000)
+
     const newItem: VentaItem = {
-      id: Date.now(), // ID temporal
+      id: tempId, // ID temporal único
       venta_id: venta?.id || 0,
       producto_id: selectedProducto.id,
       cantidad: newItemCantidad,
@@ -133,25 +145,51 @@ export const VentaModal: React.FC<VentaModalProps> = ({
     e.preventDefault()
     if (!venta) return
 
+    console.log('💾 Guardando venta:', {
+      ventaId: venta.id,
+      itemsActuales: ventaItems.length,
+      itemsOriginales: venta.venta_items?.length || 0,
+      items: ventaItems.map(item => ({
+        id: item.id,
+        producto_id: item.producto_id,
+        cantidad: item.cantidad,
+        isNew: item.id > 1000000 || !venta.venta_items?.some(originalItem => originalItem.id === item.id)
+      }))
+    })
+
     setLoading(true)
     try {
       const updatedData: UpdateVentaData = {
         ...formData,
         monto_total: calculateTotal(),
-        items: ventaItems.map(item => ({
-          id: item.id < 100000 ? undefined : item.id, // IDs temporales no se envían
-          producto_id: item.producto_id || 0,
-          cantidad: item.cantidad,
-          precio_unitario: item.precio_unitario,
-          subtotal: item.subtotal
-        }))
+        items: ventaItems.map(item => {
+          // Un item es nuevo si su ID es mayor que 1000000 (temporal) o si no existe en los items originales
+          const isNewItem = item.id > 1000000 || !venta.venta_items?.some(originalItem => originalItem.id === item.id)
+          
+          return {
+            id: isNewItem ? undefined : item.id,
+            producto_id: item.producto_id || 0,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario,
+            subtotal: item.subtotal
+          }
+        })
       }
 
-      await ventaService.updateVenta(venta.id, updatedData)
+      const result = await ventaService.updateVenta(venta.id, updatedData)
+      
+      if (result.error) {
+        console.error('Error actualizando venta:', result.error)
+        alert('Error al actualizar la venta. Revisa la consola para más detalles.')
+        return
+      }
+
+      alert('Venta actualizada exitosamente')
       onSave()
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating venta:', error)
+      alert(`Error inesperado: ${error?.message || 'Error desconocido'}`)
     } finally {
       setLoading(false)
     }

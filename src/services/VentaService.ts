@@ -273,6 +273,18 @@ class VentaService {
   // Actualizar una venta
   async updateVenta(id: number, ventaData: UpdateVentaData) {
     try {
+      console.log('🔧 Actualizando venta en DB:', {
+        ventaId: id,
+        itemsCount: ventaData.items?.length || 0,
+        items: ventaData.items?.map(item => ({
+          id: item.id,
+          producto_id: item.producto_id,
+          cantidad: item.cantidad,
+          isNew: !item.id
+        }))
+      })
+
+      // Actualizar datos principales de la venta
       const { data, error } = await supabase
         .from('ventas')
         .update({
@@ -292,51 +304,48 @@ class VentaService {
 
       // Actualizar items si se proporcionan
       if (ventaData.items) {
-        // Eliminar items marcados para eliminación
-        const itemsToDelete = ventaData.items.filter(item => item._delete)
-        if (itemsToDelete.length > 0) {
-          const idsToDelete = itemsToDelete.filter(item => item.id).map(item => item.id)
-          if (idsToDelete.length > 0) {
-            await supabase
-              .from('venta_items')
-              .delete()
-              .in('id', idsToDelete)
-          }
+        // ESTRATEGIA: Reemplazar todos los items para evitar duplicados
+        
+        console.log('🗑️ Eliminando todos los items existentes de venta_id:', id)
+        
+        // 1. Primero eliminar todos los items existentes
+        const { error: deleteError } = await supabase
+          .from('venta_items')
+          .delete()
+          .eq('venta_id', id)
+
+        if (deleteError) {
+          console.error('Error eliminando items:', deleteError)
+          throw deleteError
         }
 
-        // Procesar items restantes
-        const activeItems = ventaData.items.filter(item => !item._delete)
-        
-        for (const item of activeItems) {
-          if (item.id) {
-            // Actualizar item existente
-            await supabase
-              .from('venta_items')
-              .update({
-                producto_id: item.producto_id,
-                cantidad: item.cantidad,
-                precio_unitario: item.precio_unitario,
-                subtotal: item.subtotal
-              })
-              .eq('id', item.id)
-          } else {
-            // Crear nuevo item
-            await supabase
-              .from('venta_items')
-              .insert({
-                venta_id: id,
-                producto_id: item.producto_id,
-                cantidad: item.cantidad,
-                precio_unitario: item.precio_unitario,
-                subtotal: item.subtotal
-              })
+        // 2. Insertar todos los items nuevos
+        if (ventaData.items.length > 0) {
+          const itemsToInsert = ventaData.items.map(item => ({
+            venta_id: id,
+            producto_id: item.producto_id,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario,
+            subtotal: item.subtotal
+          }))
+
+          console.log('➕ Insertando nuevos items:', itemsToInsert)
+
+          const { error: itemsError } = await supabase
+            .from('venta_items')
+            .insert(itemsToInsert)
+
+          if (itemsError) {
+            console.error('Error insertando items:', itemsError)
+            throw itemsError
           }
         }
       }
 
+      console.log('✅ Venta actualizada exitosamente')
       return { data, error: null }
     } catch (error) {
-      console.error('Error actualizando venta:', error)
+      console.error('❌ Error actualizando venta:', error)
       return { data: null, error }
     }
   }
