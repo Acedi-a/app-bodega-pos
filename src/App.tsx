@@ -9,6 +9,7 @@ import { ClientesPage } from './pages/ClientesPage'
 import { ProveedoresPage } from './pages/ProveedoresPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
+import { ProductosPage } from './pages/ProductosPage'
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="clientes" element={<ClientesPage />} />
             <Route path="proveedores" element={<ProveedoresPage />} />
+            <Route path='productos' element={<ProductosPage />} />
             {/* Aquí se agregarán más rutas como productos, ventas, etc. */}
           </Route>
 

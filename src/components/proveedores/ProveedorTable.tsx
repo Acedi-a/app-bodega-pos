@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Edit, Trash2, Eye, Building, Phone, Mail, MapPin, ChevronLeft, ChevronRight, Star } from 'lucide-react'
+import { Edit, Trash2, Eye, Building, Phone, Mail, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Proveedor } from '../../types/proveedores'
 
 interface ProveedorTableProps {
@@ -39,25 +39,6 @@ export const ProveedorTable: React.FC<ProveedorTableProps> = ({
     }
   }
 
-  const renderStars = (rating?: number) => {
-    if (!rating) return <span className="text-xs text-gray-400">Sin calificar</span>
-    
-    return (
-      <div className="flex items-center">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Star
-            key={i}
-            className={`w-3 h-3 ${
-              i < Math.floor(rating)
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
-            }`}
-          />
-        ))}
-        <span className="text-xs text-gray-600 ml-1">{rating.toFixed(1)}</span>
-      </div>
-    )
-  }
 
   if (proveedores.length === 0) {
     return (

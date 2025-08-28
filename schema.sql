@@ -67,6 +67,8 @@ CREATE TABLE tipos_movimiento_inventario (
   id BIGSERIAL PRIMARY KEY,
   clave VARCHAR(50) UNIQUE NOT NULL,
   nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  incrementa_stock BOOLEAN DEFAULT true,
   creado_en TIMESTAMPTZ DEFAULT NOW()
 );
 
