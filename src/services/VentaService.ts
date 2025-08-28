@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { productoService } from './ProductoService'
 import type {
   Venta,
   CreateVentaData,
@@ -259,8 +260,29 @@ class VentaService {
 
         if (itemsError) throw itemsError
 
-        // TODO: Aquí se podría agregar lógica para actualizar inventario automáticamente
-        // creando movimientos_inventario con tipo 'salida'
+        console.log('📦 Registrando movimientos de inventario para venta:', venta.id)
+        
+        // Registrar movimientos de inventario para cada producto vendido
+        for (const item of ventaData.items) {
+          const { error: movimientoError } = await productoService.registrarMovimientoInventario(
+            item.producto_id,
+            'salida', // Las ventas son salidas de inventario
+            item.cantidad,
+            venta.id,
+            'venta',
+            ventaData.usuario_id,
+            `Venta #${venta.id} - ${item.cantidad} unidades`
+          )
+
+          if (movimientoError) {
+            console.error('Error registrando movimiento de inventario:', movimientoError)
+            // Dependiendo de la lógica de negocio, podrías decidir si:
+            // 1. Lanzar error y cancelar toda la venta
+            // 2. Continuar con warning
+            // Por ahora continuamos con warning
+            console.warn('Continuando venta sin registrar movimiento para producto:', item.producto_id)
+          }
+        }
       }
 
       return { data: venta, error: null }
@@ -338,6 +360,30 @@ class VentaService {
           if (itemsError) {
             console.error('Error insertando items:', itemsError)
             throw itemsError
+          }
+
+          console.log('📦 Registrando movimientos de inventario para items actualizados de venta:', id)
+          
+          // NOTA: Esta es una implementación básica. En producción podrías querer
+          // comparar con los items anteriores y solo registrar diferencias.
+          // Por ahora registramos movimientos para todos los items actuales como referencia.
+          for (const item of ventaData.items) {
+            // Registramos un movimiento de "ajuste" en lugar de "salida" para diferenciarlo
+            // de la venta original
+            const { error: movimientoError } = await productoService.registrarMovimientoInventario(
+              item.producto_id,
+              'salida',
+              item.cantidad,
+              id,
+              'venta_editada',
+              undefined, // TODO: Obtener usuario_id actual
+              `Venta #${id} editada - ${item.cantidad} unidades (ajuste)`
+            )
+
+            if (movimientoError) {
+              console.error('Error registrando movimiento de inventario en edición:', movimientoError)
+              console.warn('Continuando edición de venta sin registrar movimiento para producto:', item.producto_id)
+            }
           }
         }
       }

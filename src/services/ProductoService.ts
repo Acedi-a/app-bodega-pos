@@ -336,13 +336,11 @@ class ProductoService {
         tipos_movimiento_inventario!tipo_id (
           id,
           nombre,
-          descripcion,
           incrementa_stock
         ),
         usuarios!usuario_id (
           id,
-          nombre,
-          email
+          nombre
         )
       `)
       .eq('producto_id', productoId)
@@ -404,8 +402,8 @@ class ProductoService {
             descripcion,
             unidades_medida!unidad_medida_id (
                 id,
-                nombre,
-                simbolo
+                clave,
+                nombre
             )
             )
         `)
@@ -428,8 +426,8 @@ class ProductoService {
             descripcion: receta.insumos.descripcion,
             unidades_medida: receta.insumos.unidades_medida ? {
             id: receta.insumos.unidades_medida.id,
-            nombre: receta.insumos.unidades_medida.nombre,
-            simbolo: receta.insumos.unidades_medida.simbolo
+            clave: receta.insumos.unidades_medida.clave,
+            nombre: receta.insumos.unidades_medida.nombre
             } : undefined
         } : undefined
         })) || []
@@ -455,7 +453,6 @@ class ProductoService {
             producto_id,
             cantidad,
             precio_unitario,
-            descuento,
             subtotal,
             ventas!venta_id (
             id,
@@ -478,7 +475,6 @@ class ProductoService {
         producto_id: venta.producto_id,
         cantidad: venta.cantidad,
         precio_unitario: venta.precio_unitario,
-        descuento: venta.descuento,
         subtotal: venta.subtotal,
         ventas: venta.ventas ? {
             id: venta.ventas.id,
@@ -588,7 +584,137 @@ class ProductoService {
     }
   }
 
-  // Verificar productos con stock bajo\n  // TODO: Implementar con vista productos_con_alerta en el futuro\n  async getProductosStockBajo(): Promise<{ data: Producto[] }> {\n    try {\n      const { data, error } = await supabase\n        .from('productos')\n        .select(`\n          *,\n          categorias!categoria_id (\n            id,\n            nombre,\n            descripcion\n          ),\n          unidades_medida!unidad_medida_id (\n            id,\n            clave,\n            nombre,\n            simbolo\n          )\n        `)\n        .eq('activo', true)\n        .order('stock', { ascending: true })\n\n      if (error) throw error\n\n      // Filtrar productos con stock bajo en el cliente\n      const productosStockBajo = data?.filter(producto => \n        producto.stock <= (producto.stock_minimo || 0)\n      ) || []\n\n      return { data: productosStockBajo }\n    } catch (error) {\n      console.error('Error obteniendo productos con stock bajo:', error)\n      return { data: [] }\n    }\n  }
+  // ========================================
+  // MOVIMIENTOS DE INVENTARIO
+  // ========================================
+
+  // Registrar movimiento de inventario y actualizar stock
+  async registrarMovimientoInventario(
+    productoId: number,
+    tipoMovimiento: 'entrada' | 'salida',
+    cantidad: number,
+    referenciaId?: number,
+    referenciaTipo?: string,
+    usuarioId?: string,
+    notas?: string
+  ): Promise<{ error: any }> {
+    try {
+      console.log('📦 Registrando movimiento de inventario:', {
+        productoId,
+        tipoMovimiento,
+        cantidad,
+        referenciaId,
+        referenciaTipo
+      })
+
+      // Obtener el ID del tipo de movimiento
+      const { data: tipoData, error: tipoError } = await supabase
+        .from('tipos_movimiento_inventario')
+        .select('id, incrementa_stock')
+        .eq('clave', tipoMovimiento)
+        .single()
+
+      if (tipoError || !tipoData) {
+        console.error('Error obteniendo tipo de movimiento:', tipoError)
+        throw new Error(`Tipo de movimiento '${tipoMovimiento}' no encontrado`)
+      }
+
+      // Obtener stock actual del producto
+      const { data: producto, error: productoError } = await supabase
+        .from('productos')
+        .select('stock')
+        .eq('id', productoId)
+        .single()
+
+      if (productoError) throw productoError
+
+      const stockAnterior = producto.stock || 0
+      const incrementa = tipoData.incrementa_stock
+      let nuevoStock = stockAnterior
+
+      if (incrementa) {
+        nuevoStock = stockAnterior + cantidad
+      } else {
+        nuevoStock = stockAnterior - cantidad
+      }
+
+      // Validar que el stock no sea negativo
+      if (nuevoStock < 0) {
+        throw new Error(`Stock insuficiente. Stock actual: ${stockAnterior}, intentando restar: ${cantidad}`)
+      }
+
+      // Actualizar stock del producto
+      const { error: updateError } = await supabase
+        .from('productos')
+        .update({ stock: nuevoStock })
+        .eq('id', productoId)
+
+      if (updateError) throw updateError
+
+      // Registrar el movimiento
+      const { error: movimientoError } = await supabase
+        .from('movimientos_inventario')
+        .insert({
+          producto_id: productoId,
+          tipo_id: tipoData.id,
+          cantidad: cantidad,
+          referencia_id: referenciaId,
+          referencia_tipo: referenciaTipo,
+          usuario_id: usuarioId,
+          notas: notas,
+          fecha: new Date().toISOString()
+        })
+
+      if (movimientoError) throw movimientoError
+
+      console.log('✅ Movimiento registrado exitosamente:', {
+        stockAnterior,
+        nuevoStock,
+        diferencia: nuevoStock - stockAnterior
+      })
+
+      return { error: null }
+    } catch (error) {
+      console.error('❌ Error registrando movimiento de inventario:', error)
+      return { error }
+    }
+  }
+
+  // Verificar productos con stock bajo
+  // TODO: Implementar con vista productos_con_alerta en el futuro
+  async getProductosStockBajo(): Promise<{ data: Producto[] }> {
+    try {
+      const { data, error } = await supabase
+        .from('productos')
+        .select(`
+          *,
+          categorias!categoria_id (
+            id,
+            nombre,
+            descripcion
+          ),
+          unidades_medida!unidad_medida_id (
+            id,
+            clave,
+            nombre
+          )
+        `)
+        .eq('activo', true)
+        .order('stock', { ascending: true })
+
+      if (error) throw error
+
+      // Filtrar productos con stock bajo en el cliente
+      const productosStockBajo = data?.filter(producto => 
+        producto.stock <= (producto.stock_minimo || 0)
+      ) || []
+
+      return { data: productosStockBajo }
+    } catch (error) {
+      console.error('Error obteniendo productos con stock bajo:', error)
+      return { data: [] }
+    }
+  }
 }
 
 export const productoService = new ProductoService()

@@ -115,8 +115,8 @@ export interface ProductoReceta {
     descripcion?: string
     unidades_medida?: {
       id: number
+      clave: string
       nombre: string
-      simbolo: string
     }
   }
 }
@@ -127,7 +127,6 @@ export interface ProductoVenta {
   producto_id: number
   cantidad: number
   precio_unitario: number
-  descuento: number
   subtotal: number
   
   // Relaciones

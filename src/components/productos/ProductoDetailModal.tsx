@@ -364,7 +364,10 @@ export const ProductoDetailModal: React.FC<ProductoDetailModalProps> = ({
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-purple-600">
-                          {receta.cantidad_por_unidad} {receta.insumos?.unidades_medida?.simbolo || 'unidades'}
+                          {receta.cantidad_por_unidad}{' '}
+                          {('simbolo' in (receta.insumos?.unidades_medida ?? {}))
+                            ? (receta.insumos?.unidades_medida as { simbolo?: string }).simbolo
+                            : 'unidades'}
                         </p>
                         <p className="text-xs text-gray-400">por unidad</p>
                       </div>

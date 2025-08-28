@@ -63,14 +63,6 @@ CREATE TABLE estados (
   UNIQUE (categoria, clave)
 );
 
-CREATE TABLE tipos_movimiento_inventario (
-  id BIGSERIAL PRIMARY KEY,
-  clave VARCHAR(50) UNIQUE NOT NULL,
-  nombre VARCHAR(100) NOT NULL,
-  descripcion TEXT,
-  incrementa_stock BOOLEAN DEFAULT true,
-  creado_en TIMESTAMPTZ DEFAULT NOW()
-);
 
 CREATE TABLE tipos_movimiento_insumos (
   id BIGSERIAL PRIMARY KEY,
@@ -239,6 +231,17 @@ FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 -- ======================================
 -- MOVIMIENTOS DE INVENTARIO
 -- ======================================
+
+CREATE TABLE tipos_movimiento_inventario (
+  id BIGSERIAL PRIMARY KEY,
+  clave VARCHAR(50) UNIQUE NOT NULL,
+  nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  incrementa_stock BOOLEAN DEFAULT true,
+  creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 CREATE TABLE movimientos_inventario (
   id BIGSERIAL PRIMARY KEY,
   producto_id BIGINT REFERENCES productos(id) ON DELETE CASCADE,
