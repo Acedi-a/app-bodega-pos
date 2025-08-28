@@ -9,6 +9,7 @@ import { ClientesPage } from './pages/ClientesPage'
 import { ProveedoresPage } from './pages/ProveedoresPage'
 import { ProductosPage } from './pages/ProductosPage'
 import { VentasPage } from './pages/VentasPage'
+import InventarioPage from './pages/InventarioPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
 
@@ -39,6 +40,7 @@ function App() {
             <Route path="proveedores" element={<ProveedoresPage />} />
             <Route path='productos' element={<ProductosPage />} />
             <Route path='ventas' element={<VentasPage />} />
+            <Route path='inventario' element={<InventarioPage />} />
             {/* Aquí se agregarán más rutas */}
           </Route>
 
