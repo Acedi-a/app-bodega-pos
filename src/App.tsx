@@ -17,6 +17,7 @@ import PedidosPage from './pages/PedidosPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
 import { PerdidasPage } from './pages/PerdidasPage'
+import { ReportesPage } from './pages/ReportesPage'
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
             <Route path='pedidos' element={<PedidosPage />} />
             <Route path='pedidos/nuevo' element={<PedidosPage />} />
             <Route path='perdidas' element={<PerdidasPage />} />
+            <Route path='reportes' element={<ReportesPage />} />
             {/* Aquí se agregarán más rutas */}
           </Route>
 
