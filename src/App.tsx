@@ -16,6 +16,7 @@ import RecetasPage from './pages/RecetasPage'
 import PedidosPage from './pages/PedidosPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
+import { PerdidasPage } from './pages/PerdidasPage'
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
             <Route path='recetas' element={<RecetasPage />} />
             <Route path='pedidos' element={<PedidosPage />} />
             <Route path='pedidos/nuevo' element={<PedidosPage />} />
+            <Route path='perdidas' element={<PerdidasPage />} />
             {/* Aquí se agregarán más rutas */}
           </Route>
 

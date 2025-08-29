@@ -329,68 +329,298 @@ class PedidoService {
   // Ajustar un pedido existente a nuevas cantidades (reserva o liberación del delta)
   async ajustarPedido(pedidoId: number, nuevosItems: Array<{ producto_id: number; cantidad: number }>): Promise<{ ok: boolean; error?: string }> {
     try {
-      // 1) disponibilidad deseada (solo para construir reservas target)
-      const disp = await this.calcularDisponibilidad({ tercero_id: null, items: nuevosItems })
-      // 2) reservas actuales
-      const actuales = await this.getReservasNetas(pedidoId)
-      // 3) por cada línea, calcular delta en producto e insumos
-      for (const l of disp.lineas) {
-        const actualProd = actuales.productos[l.producto_id] || 0
-        const targetProd = l.detalleReserva?.reservar_producto || 0
-        const deltaProd = targetProd - actualProd
-        if (deltaProd > 0) {
-          await productoService.registrarMovimientoInventario(l.producto_id, 'salida', deltaProd, pedidoId, 'pedido', undefined, 'Reserva adicional por ajuste de pedido')
-        } else if (deltaProd < 0) {
-          await productoService.registrarMovimientoInventario(l.producto_id, 'entrada', Math.abs(deltaProd), pedidoId, 'pedido', undefined, 'Liberación por reducción de pedido')
+      console.log('=== INICIO ajustarPedido ===')
+      console.log('pedidoId:', pedidoId)
+      console.log('nuevosItems:', nuevosItems)
+      
+      // 1) obtener items actuales del pedido
+      const { data: itemsActuales, error: errorItems } = await supabase
+        .from('pedido_items')
+        .select('producto_id, cantidad')
+        .eq('pedido_id', pedidoId)
+
+      if (errorItems) {
+        console.error('Error obteniendo items actuales:', errorItems)
+        throw errorItems
+      }
+
+      console.log('Items actuales:', itemsActuales)
+
+      const actualesMap: Record<number, number> = {}
+      for (const item of itemsActuales || []) {
+        actualesMap[item.producto_id] = item.cantidad
+      }
+
+      // 2) calcular deltas por producto - filtrar items con cantidad > 0
+      const itemsValidos = nuevosItems.filter(item => item.cantidad > 0)
+      const deltas: Array<{ producto_id: number; delta: number }> = []
+      
+      // productos en los nuevos items
+      for (const nuevoItem of itemsValidos) {
+        const cantidadActual = actualesMap[nuevoItem.producto_id] || 0
+        const delta = nuevoItem.cantidad - cantidadActual
+        if (delta !== 0) {
+          deltas.push({ producto_id: nuevoItem.producto_id, delta })
         }
-        // insumos
-        const targetIns: Record<number, number> = {}
-        for (const r of (l.detalleReserva?.reservar_insumos || [])) {
-          targetIns[r.insumo_id] = (targetIns[r.insumo_id] || 0) + r.cantidad
+      }
+
+      // productos que se eliminaron completamente (incluyendo los que se redujeron a 0)
+      for (const [prodIdStr, cantidadActual] of Object.entries(actualesMap)) {
+        const prodId = Number(prodIdStr)
+        const enNuevos = itemsValidos.find(i => i.producto_id === prodId)
+        if (!enNuevos) {
+          deltas.push({ producto_id: prodId, delta: -cantidadActual })
         }
-        const insIds = new Set([...Object.keys(targetIns).map(Number), ...Object.keys(actuales.insumos).map(Number)])
-        for (const insId of insIds) {
-          const actual = actuales.insumos[insId] || 0
-          const target = targetIns[insId] || 0
-          const delta = target - actual
+      }
+
+      console.log('Deltas calculados:', deltas)
+
+      // 3) procesar cada delta
+      for (const { producto_id, delta } of deltas) {
+        console.log(`=== Procesando delta para producto ${producto_id}: ${delta} ===`)
+        try {
           if (delta > 0) {
-            // reservar más (salida)
-            const { data: tipo } = await supabase.from('tipos_movimiento_insumos').select('id').eq('clave', 'salida').single()
-            if (!tipo) throw new Error('Tipo salida no encontrado')
-            const { data: insumo } = await supabase.from('insumos').select('stock').eq('id', insId).single()
-            const stockActual = Number(insumo?.stock || 0)
-            if (stockActual < delta) throw new Error(`Stock insuficiente de insumo ${insId}`)
-            const { error: upErr } = await supabase.from('insumos').update({ stock: stockActual - delta }).eq('id', insId)
-            if (upErr) throw upErr
-            const { error: movErr } = await supabase.from('movimientos_insumos').insert({ insumo_id: insId, tipo_id: tipo.id, cantidad: delta, referencia_tipo: 'pedido', referencia_id: pedidoId, notas: 'Reserva adicional por ajuste de pedido' })
-            if (movErr) throw movErr
+            // Aumentó: reservar más
+            console.log(`Intentando reservar ${delta} unidades para producto ${producto_id}`)
+            await this.reservarParaProducto(pedidoId, producto_id, delta)
+            console.log(`✅ Reservado ${delta} unidades para producto ${producto_id}`)
           } else if (delta < 0) {
-            // liberar (entrada)
-            const { data: tipo } = await supabase.from('tipos_movimiento_insumos').select('id').eq('clave', 'entrada').single()
-            if (!tipo) throw new Error('Tipo entrada no encontrado')
-            const { data: insumo } = await supabase.from('insumos').select('stock').eq('id', insId).single()
-            const stockActual = Number(insumo?.stock || 0)
-            const liberar = Math.abs(delta)
-            const { error: upErr } = await supabase.from('insumos').update({ stock: stockActual + liberar }).eq('id', insId)
-            if (upErr) throw upErr
-            const { error: movErr } = await supabase.from('movimientos_insumos').insert({ insumo_id: insId, tipo_id: tipo.id, cantidad: liberar, referencia_tipo: 'pedido', referencia_id: pedidoId, notas: 'Liberación por reducción de pedido' })
-            if (movErr) throw movErr
+            // Disminuyó: liberar
+            console.log(`Intentando liberar ${Math.abs(delta)} unidades para producto ${producto_id}`)
+            await this.liberarParaProducto(pedidoId, producto_id, Math.abs(delta))
+            console.log(`✅ Liberado ${Math.abs(delta)} unidades para producto ${producto_id}`)
           }
+        } catch (deltaError) {
+          console.error(`Error procesando delta para producto ${producto_id}:`, deltaError)
+          throw deltaError
         }
       }
-      // 4) actualizar cantidades en pedido_items (upsert simple)
-      for (const it of nuevosItems) {
-        await supabase
-          .from('pedido_items')
-          .update({ cantidad: it.cantidad })
-          .eq('pedido_id', pedidoId)
-          .eq('producto_id', it.producto_id)
+
+      // 4) actualizar los items en la base de datos
+      console.log('Actualizando items en base de datos...')
+      const { error: deleteErr } = await supabase.from('pedido_items').delete().eq('pedido_id', pedidoId)
+      if (deleteErr) {
+        console.error('Error eliminando items:', deleteErr)
+        throw deleteErr
       }
+
+      if (itemsValidos.length > 0) {
+        const insertData = itemsValidos.map(item => ({
+          pedido_id: pedidoId,
+          producto_id: item.producto_id,
+          cantidad: item.cantidad
+        }))
+        console.log('Insertando items:', insertData)
+        
+        const { error: insertErr } = await supabase
+          .from('pedido_items')
+          .insert(insertData)
+        if (insertErr) {
+          console.error('Error insertando items:', insertErr)
+          throw insertErr
+        }
+        console.log('✅ Items actualizados correctamente')
+      }
+
+      console.log('=== FIN ajustarPedido EXITOSO ===')
       return { ok: true }
     } catch (e: any) {
-      console.error('ajustarPedido error', e)
+      console.error('=== ERROR en ajustarPedido ===', e)
       return { ok: false, error: e?.message || String(e) }
     }
+  }
+
+  // Reservar stock e insumos para una cantidad específica de un producto
+  private async reservarParaProducto(pedidoId: number, productoId: number, cantidad: number) {
+    console.log(`reservarParaProducto: pedido=${pedidoId}, producto=${productoId}, cantidad=${cantidad}`)
+    
+    // calcular disponibilidad para esta cantidad específica
+    const disp = await this.calcularDisponibilidad({ 
+      tercero_id: null, 
+      items: [{ producto_id: productoId, cantidad }] 
+    })
+    
+    console.log('Disponibilidad calculada:', disp.lineas[0])
+    
+    const linea = disp.lineas[0]
+    if (!linea) throw new Error(`No se pudo calcular disponibilidad para producto ${productoId}`)
+    
+    // reservar producto desde stock
+    if (linea.detalleReserva?.reservar_producto) {
+      await productoService.registrarMovimientoInventario(
+        productoId,
+        'salida',
+        linea.detalleReserva.reservar_producto,
+        pedidoId,
+        'pedido',
+        undefined,
+        'Reserva por ajuste de pedido'
+      )
+      console.log(`Reservado ${linea.detalleReserva.reservar_producto} unidades de producto ${productoId}`)
+    }
+    
+    // reservar insumos
+    for (const ins of (linea.detalleReserva?.reservar_insumos || [])) {
+      const { data: tipo } = await supabase
+        .from('tipos_movimiento_insumos')
+        .select('id')
+        .eq('clave', MOV_INS.RESERVA)
+        .single()
+      if (!tipo) throw new Error('Tipo de movimiento insumo RESERVA no encontrado')
+      
+      // actualizar stock del insumo
+      const { data: insumo } = await supabase
+        .from('insumos')
+        .select('stock')
+        .eq('id', ins.insumo_id)
+        .single()
+      const stockActual = Number(insumo?.stock || 0)
+      if (stockActual < ins.cantidad) throw new Error(`Stock insuficiente de insumo ${ins.insumo_id}`)
+      
+      const { error: upErr } = await supabase
+        .from('insumos')
+        .update({ stock: stockActual - ins.cantidad })
+        .eq('id', ins.insumo_id)
+      if (upErr) throw upErr
+      
+      // registrar movimiento
+      const { error: movErr } = await supabase
+        .from('movimientos_insumos')
+        .insert({
+          insumo_id: ins.insumo_id,
+          tipo_id: tipo.id,
+          cantidad: ins.cantidad,
+          referencia_tipo: 'pedido',
+          referencia_id: pedidoId,
+          notas: 'Reserva de insumo por ajuste de pedido'
+        })
+      if (movErr) throw movErr
+      
+      console.log(`Reservado ${ins.cantidad} unidades de insumo ${ins.insumo_id}`)
+    }
+  }
+
+  // Liberar stock e insumos para una cantidad específica de un producto
+  private async liberarParaProducto(pedidoId: number, productoId: number, cantidad: number) {
+    console.log(`liberarParaProducto: pedido=${pedidoId}, producto=${productoId}, cantidad=${cantidad}`)
+    
+    // 1. Obtener las reservas actuales del pedido
+    const reservasActuales = await this.getReservasNetas(pedidoId)
+    console.log('Reservas actuales del pedido:', reservasActuales)
+    
+    const reservaProducto = reservasActuales.productos[productoId] || 0
+    console.log(`Reserva actual de producto ${productoId}:`, reservaProducto)
+    
+    // 2. Calcular proporción a liberar basada en la cantidad solicitada vs total reservado
+    // Primero necesitamos saber cuánto se había solicitado originalmente
+    const { data: itemActual } = await supabase
+      .from('pedido_items')
+      .select('cantidad')
+      .eq('pedido_id', pedidoId)
+      .eq('producto_id', productoId)
+      .single()
+    
+    const cantidadOriginal = Number(itemActual?.cantidad || 0)
+    console.log(`Cantidad original del producto ${productoId}:`, cantidadOriginal)
+    
+    // Si no hay cantidad original, no podemos calcular proporciones
+    if (cantidadOriginal === 0) {
+      console.log('No hay cantidad original, liberando toda la reserva del producto')
+      // Liberar toda la reserva del producto
+      if (reservaProducto > 0) {
+        await productoService.registrarMovimientoInventario(
+          productoId,
+          'entrada',
+          reservaProducto,
+          pedidoId,
+          'pedido',
+          undefined,
+          'Liberación total por eliminación de producto del pedido'
+        )
+        console.log(`Liberado ${reservaProducto} unidades de producto ${productoId}`)
+      }
+      
+      // Liberar todos los insumos asociados a este pedido
+      for (const [insumoIdStr, cantidadReservada] of Object.entries(reservasActuales.insumos)) {
+        const insumoId = Number(insumoIdStr)
+        if (cantidadReservada > 0) {
+          await this.liberarInsumo(pedidoId, insumoId, cantidadReservada)
+          console.log(`Liberado ${cantidadReservada} unidades de insumo ${insumoId}`)
+        }
+      }
+      return
+    }
+    
+    // 3. Calcular qué proporción de las reservas liberar
+    const proporcion = cantidad / cantidadOriginal
+    console.log(`Proporción a liberar: ${cantidad}/${cantidadOriginal} = ${proporcion}`)
+    
+    // 4. Liberar producto proporcionalmente
+    const cantidadProductoALiberar = Math.floor(reservaProducto * proporcion)
+    if (cantidadProductoALiberar > 0) {
+      await productoService.registrarMovimientoInventario(
+        productoId,
+        'entrada',
+        cantidadProductoALiberar,
+        pedidoId,
+        'pedido',
+        undefined,
+        `Liberación proporcional por reducción de pedido (${cantidad} unidades)`
+      )
+      console.log(`Liberado ${cantidadProductoALiberar} unidades de producto ${productoId}`)
+    }
+    
+    // 5. Liberar insumos proporcionalmente
+    // Para esto necesitamos calcular cuántos insumos corresponden a esta cantidad
+    const { data: receta } = await recetaService.getRecetaByProducto(productoId)
+    console.log(`Receta para producto ${productoId}:`, receta)
+    
+    for (const r of receta.filter(x => x.obligatorio)) {
+      const porUnidad = Number(r.cantidad_por_unidad || 0)
+      const cantidadInsumoALiberar = porUnidad * cantidad
+      
+      if (cantidadInsumoALiberar > 0) {
+        await this.liberarInsumo(pedidoId, r.insumo_id, cantidadInsumoALiberar)
+        console.log(`Liberado ${cantidadInsumoALiberar} unidades de insumo ${r.insumo_id} (${porUnidad} por unidad × ${cantidad})`)
+      }
+    }
+  }
+  
+  // Método auxiliar para liberar un insumo específico
+  private async liberarInsumo(pedidoId: number, insumoId: number, cantidad: number) {
+    const { data: tipo } = await supabase
+      .from('tipos_movimiento_insumos')
+      .select('id')
+      .eq('clave', MOV_INS.LIBERACION)
+      .single()
+    if (!tipo) throw new Error('Tipo de movimiento insumo LIBERACION no encontrado')
+    
+    // actualizar stock del insumo
+    const { data: insumo } = await supabase
+      .from('insumos')
+      .select('stock')
+      .eq('id', insumoId)
+      .single()
+    const stockActual = Number(insumo?.stock || 0)
+    
+    const { error: upErr } = await supabase
+      .from('insumos')
+      .update({ stock: stockActual + cantidad })
+      .eq('id', insumoId)
+    if (upErr) throw upErr
+    
+    // registrar movimiento
+    const { error: movErr } = await supabase
+      .from('movimientos_insumos')
+      .insert({
+        insumo_id: insumoId,
+        tipo_id: tipo.id,
+        cantidad: cantidad,
+        referencia_tipo: 'pedido',
+        referencia_id: pedidoId,
+        notas: 'Liberación de insumo por ajuste de pedido'
+      })
+    if (movErr) throw movErr
   }
 
   // Cancelar pedido: liberar todas las reservas y marcar estado 'cancelado'

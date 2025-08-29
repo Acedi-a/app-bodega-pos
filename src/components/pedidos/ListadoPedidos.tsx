@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Calendar, Edit3, Trash2, Package, Clock, AlertTriangle } from 'lucide-react'
+import { Calendar, Edit3, Trash2, Package, Clock, AlertTriangle, RefreshCw } from 'lucide-react'
 import { pedidoService } from '../../services/PedidoService'
 
 interface Props {
@@ -38,20 +38,20 @@ export const ListadoPedidos: React.FC<Props> = ({ onEdit, onRefresh, refreshTrig
   }
 
   const getEstadoBadge = (estado: any) => {
-    if (!estado) return <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">Sin estado</span>
+    if (!estado) return <span className="inline-flex px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">Sin estado</span>
     
     const colors = {
-      pendiente: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      confirmado: 'bg-blue-100 text-blue-700 border-blue-200', 
-      en_proceso: 'bg-purple-100 text-purple-700 border-purple-200',
-      entregado: 'bg-green-100 text-green-700 border-green-200',
-      cancelado: 'bg-red-100 text-red-700 border-red-200'
+      pendiente: 'bg-amber-100 text-amber-800 border-amber-200',
+      confirmado: 'bg-blue-100 text-blue-800 border-blue-200', 
+      en_proceso: 'bg-purple-100 text-purple-800 border-purple-200',
+      entregado: 'bg-green-100 text-green-800 border-green-200',
+      cancelado: 'bg-red-100 text-red-800 border-red-200'
     }
     
     const colorClass = colors[estado.clave as keyof typeof colors] || 'bg-gray-100 text-gray-700'
     
     return (
-      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs border ${colorClass}`}>
+      <span className={`inline-flex px-2 py-1 rounded-full text-xs border font-medium ${colorClass}`}>
         {estado.nombre}
       </span>
     )
@@ -62,28 +62,28 @@ export const ListadoPedidos: React.FC<Props> = ({ onEdit, onRefresh, refreshTrig
     
     if (dias < 0) {
       return (
-        <div className="inline-flex items-center gap-1 text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded text-xs">
+        <div className="inline-flex items-center gap-1 text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded-full text-xs">
           <AlertTriangle className="w-3 h-3"/>
           Hace {Math.abs(dias)} días
         </div>
       )
     } else if (dias === 0) {
       return (
-        <div className="inline-flex items-center gap-1 text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded text-xs">
+        <div className="inline-flex items-center gap-1 text-orange-700 bg-orange-50 border border-orange-200 px-2 py-1 rounded-full text-xs">
           <Clock className="w-3 h-3"/>
           Hoy
         </div>
       )
     } else if (dias <= 3) {
       return (
-        <div className="inline-flex items-center gap-1 text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded text-xs">
+        <div className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full text-xs">
           <Clock className="w-3 h-3"/>
           {dias} días
         </div>
       )
     } else {
       return (
-        <div className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded text-xs">
+        <div className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-full text-xs">
           <Calendar className="w-3 h-3"/>
           {dias} días
         </div>
@@ -110,72 +110,76 @@ export const ListadoPedidos: React.FC<Props> = ({ onEdit, onRefresh, refreshTrig
 
   if (loading && data.length === 0) {
     return (
-      <div className="bg-white rounded-xl border p-8 shadow-sm">
+      <div className="bg-white rounded-2xl border p-8 shadow-sm">
         <div className="flex items-center justify-center">
-          <div className="text-gray-500">Cargando pedidos...</div>
+          <div className="text-gray-500 flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Cargando pedidos...
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Listado de Pedidos</h2>
+    <div className="bg-white rounded-2xl border p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-800">Listado de Pedidos</h2>
         <button 
           onClick={load}
           disabled={loading}
-          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded border disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg border disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Cargando...' : 'Actualizar'}
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Actualizando...' : 'Actualizar'}
         </button>
       </div>
       
       {data.length === 0 ? (
-        <div className="text-center py-8">
-          <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 mb-2">No hay pedidos registrados</p>
-          <p className="text-gray-400 text-sm">Los pedidos aparecerán aquí cuando se creen</p>
+        <div className="text-center py-12">
+          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay pedidos registrados</h3>
+          <p className="text-gray-500">Los pedidos aparecerán aquí cuando se creen</p>
         </div>
       ) : (
         <>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-hidden rounded-xl border">
+            <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-3 py-2 text-left">#</th>
-                  <th className="px-3 py-2 text-left">Cliente</th>
-                  <th className="px-3 py-2 text-left">Estado</th>
-                  <th className="px-3 py-2 text-left">Fecha Pedido</th>
-                  <th className="px-3 py-2 text-left">Fecha Entrega</th>
-                  <th className="px-3 py-2 text-left">Tiempo</th>
-                  <th className="px-3 py-2 text-right">Acciones</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Pedido</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Entrega</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {data.map(p => (
-                  <tr key={p.id} className="border-t hover:bg-gray-50">
-                    <td className="px-3 py-2 font-medium">#{p.id}</td>
-                    <td className="px-3 py-2">{p.terceros?.nombre || 'Sin cliente'}</td>
-                    <td className="px-3 py-2">{getEstadoBadge(p.estados)}</td>
-                    <td className="px-3 py-2">{new Date(p.fecha_pedido).toLocaleDateString()}</td>
-                    <td className="px-3 py-2">{p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString() : '-'}</td>
-                    <td className="px-3 py-2">{getDiasRestantesBadge(diasRestantes(p.fecha_entrega))}</td>
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{p.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{p.terceros?.nombre || 'Sin cliente'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{getEstadoBadge(p.estados)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(p.fecha_pedido).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString() : '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{getDiasRestantesBadge(diasRestantes(p.fecha_entrega))}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
                         <button 
                           onClick={() => onEdit(p)}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
                         >
-                          <Edit3 className="w-3 h-3"/>
+                          <Edit3 className="w-4 h-4"/>
                           Editar
                         </button>
                         {p.estados?.clave !== 'cancelado' && (
                           <button 
                             onClick={() => handleDelete(p.id)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
                           >
-                            <Trash2 className="w-3 h-3"/>
+                            <Trash2 className="w-4 h-4"/>
                             Cancelar
                           </button>
                         )}
@@ -188,22 +192,22 @@ export const ListadoPedidos: React.FC<Props> = ({ onEdit, onRefresh, refreshTrig
           </div>
           
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-6 flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Página {page} de {totalPages}
+                Mostrando página {page} de {totalPages}
               </div>
               <div className="flex gap-2">
                 <button 
                   disabled={page <= 1} 
                   onClick={() => setPage(p => Math.max(1, p - 1))} 
-                  className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                 >
                   Anterior
                 </button>
                 <button 
                   disabled={page >= totalPages} 
                   onClick={() => setPage(p => p + 1)} 
-                  className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                 >
                   Siguiente
                 </button>
