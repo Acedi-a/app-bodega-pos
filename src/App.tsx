@@ -11,6 +11,7 @@ import { ProductosPage } from './pages/ProductosPage'
 import { VentasPage } from './pages/VentasPage'
 import InventarioPage from './pages/InventarioPage'
 import InsumosPage from './pages/InsumosPage'
+import RecetasPage from './pages/RecetasPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
 
@@ -43,6 +44,7 @@ function App() {
             <Route path='ventas' element={<VentasPage />} />
             <Route path='inventario' element={<InventarioPage />} />
             <Route path='insumos' element={<InsumosPage />} />
+            <Route path='recetas' element={<RecetasPage />} />
             {/* Aquí se agregarán más rutas */}
           </Route>
 
