@@ -24,47 +24,63 @@ export const AgregarInsumoForm: React.FC<Props> = ({ onAdd }) => {
   }, [search])
 
   return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Buscar insumo..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-lg"
-        />
-        <input
-          type="number"
-          value={cantidad}
-          min={0}
-          step={0.01}
-          onChange={(e) => setCantidad(Number(e.target.value))}
-          className="w-28 px-3 py-2 border rounded-lg"
-        />
-        <label className="inline-flex items-center gap-2 text-sm text-gray-700 px-3 py-2 border rounded-lg bg-white">
-          <input type="checkbox" checked={obligatorio} onChange={(e) => setObligatorio(e.target.checked)} />
-          Obligatorio
-        </label>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Buscar insumo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+          />
+        </div>
+        <div className="flex gap-3">
+          <input
+            type="number"
+            value={cantidad}
+            min={0}
+            step={0.01}
+            onChange={(e) => setCantidad(Number(e.target.value))}
+            className="w-32 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+          />
+          <label className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg bg-white cursor-pointer hover:bg-gray-50 transition">
+            <input 
+              type="checkbox" 
+              checked={obligatorio} 
+              onChange={(e) => setObligatorio(e.target.checked)} 
+              className="rounded text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-gray-700">Obligatorio</span>
+          </label>
+        </div>
       </div>
-      <div className="max-h-44 overflow-auto border rounded-lg">
+      
+      <div className="max-h-60 overflow-auto border border-gray-200 rounded-lg bg-white shadow-sm">
         {loading ? (
-          <div className="p-3 text-sm text-gray-500">Buscando...</div>
+          <div className="p-4 text-center text-gray-500">
+            <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-amber-500 mr-2"></div>
+            Buscando...
+          </div>
         ) : results.length === 0 ? (
-          <div className="p-3 text-sm text-gray-500">Sin resultados</div>
+          <div className="p-4 text-center text-gray-500">Sin resultados</div>
         ) : (
-          results.map(r => (
-            <button
-              key={r.id}
-              onClick={() => onAdd(r as any, cantidad, obligatorio)}
-              className="w-full text-left p-3 hover:bg-gray-50 flex items-center justify-between"
-            >
-              <div>
-                <div className="text-sm font-medium text-gray-900">{r.nombre}</div>
-                <div className="text-xs text-gray-500">Stock: {r.stock} {r.unidades_medida?.nombre || ''}</div>
-              </div>
-              <div className="text-xs text-gray-500">Añadir</div>
-            </button>
-          ))
+          <ul className="divide-y divide-gray-100">
+            {results.map(r => (
+              <li key={r.id}>
+                <button
+                  onClick={() => onAdd(r as any, cantidad, obligatorio)}
+                  className="w-full text-left p-4 hover:bg-amber-50 flex items-center justify-between transition"
+                >
+                  <div>
+                    <div className="font-medium text-gray-900">{r.nombre}</div>
+                    <div className="text-sm text-gray-500">Stock: {r.stock} {r.unidades_medida?.nombre || ''}</div>
+                  </div>
+                  <div className="text-sm text-amber-600 font-medium">Añadir</div>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
