@@ -23,6 +23,7 @@ const menuItems = [
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: Truck, label: 'Proveedores', path: '/proveedores' },
   { icon: Package, label: 'Productos', path: '/productos' },
+  { icon: Package, label: 'Insumos', path: '/insumos' },
   { icon: Factory, label: 'Inventario', path: '/inventario' },
   { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
   { icon: CreditCard, label: 'Pedidos', path: '/pedidos' },
