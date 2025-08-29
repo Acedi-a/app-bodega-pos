@@ -13,6 +13,7 @@ import InventarioPage from './pages/InventarioPage'
 import InventarioInsumosPage from './pages/InventarioInsumosPage'
 import InsumosPage from './pages/InsumosPage'
 import RecetasPage from './pages/RecetasPage'
+import PedidosPage from './pages/PedidosPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
 import './App.css'
 
@@ -47,6 +48,8 @@ function App() {
             <Route path='inventario-insumos' element={<InventarioInsumosPage />} />
             <Route path='insumos' element={<InsumosPage />} />
             <Route path='recetas' element={<RecetasPage />} />
+            <Route path='pedidos' element={<PedidosPage />} />
+            <Route path='pedidos/nuevo' element={<PedidosPage />} />
             {/* Aquí se agregarán más rutas */}
           </Route>
 

@@ -14,7 +14,9 @@ import {
   Home,
   Factory,
   CreditCard,
-  AlertTriangle
+  AlertTriangle,
+  NotepadText,
+  BottleWine
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -24,9 +26,9 @@ const menuItems = [
   { icon: Truck, label: 'Proveedores', path: '/proveedores' },
   { icon: Package, label: 'Productos', path: '/productos' },
   { icon: Package, label: 'Insumos', path: '/insumos' },
-  { icon: Factory, label: 'Recetas', path: '/recetas' },
+  { icon: NotepadText, label: 'Recetas', path: '/recetas' },
   { icon: Factory, label: 'Inventario', path: '/inventario' },
-  { icon: Factory, label: 'Inventario Insumos', path: '/inventario-insumos' },
+  { icon: BottleWine, label: 'Inventario Insumos', path: '/inventario-insumos' },
   { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
   { icon: CreditCard, label: 'Pedidos', path: '/pedidos' },
   { icon: AlertTriangle, label: 'Pérdidas', path: '/perdidas' },
