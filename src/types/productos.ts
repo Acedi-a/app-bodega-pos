@@ -106,7 +106,6 @@ export interface ProductoReceta {
   cantidad_por_unidad: number
   obligatorio: boolean
   creado_en: string
-  actualizado_en: string
   
   // Relaciones
   insumos?: {

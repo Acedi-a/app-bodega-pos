@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X, Package, BarChart3, History, Users, DollarSign, Calendar, Tag } from 'lucide-react'
+import { X, Package, BarChart3, History, Users, DollarSign, Calendar, Tag, BookOpen } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { productoService } from '../../services/ProductoService'
 import type { 
   Producto, 
@@ -21,6 +22,7 @@ export const ProductoDetailModal: React.FC<ProductoDetailModalProps> = ({
   onClose,
   producto
 }) => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('general')
   const [movimientos, setMovimientos] = useState<ProductoMovimiento[]>([])
   const [recetas, setRecetas] = useState<ProductoReceta[]>([])
@@ -124,12 +126,14 @@ export const ProductoDetailModal: React.FC<ProductoDetailModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -332,7 +336,16 @@ export const ProductoDetailModal: React.FC<ProductoDetailModalProps> = ({
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Recetas</h3>
-                <span className="text-sm text-gray-500">Insumos utilizados en este producto</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Insumos utilizados en este producto</span>
+                  <button
+                    onClick={() => navigate(`/recetas?productoId=${producto.id}`)}
+                    className="px-3 py-2 text-sm bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex items-center gap-2"
+                    title="Administrar receta"
+                  >
+                    <BookOpen className="w-4 h-4" /> Ir a Recetas
+                  </button>
+                </div>
               </div>
               
               {loadingRecetas ? (

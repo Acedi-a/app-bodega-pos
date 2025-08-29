@@ -395,7 +395,6 @@ class ProductoService {
             cantidad_por_unidad,
             obligatorio,
             creado_en,
-            actualizado_en,
             insumos!insumo_id (
             id,
             nombre,
@@ -418,8 +417,7 @@ class ProductoService {
         insumo_id: receta.insumo_id,
         cantidad_por_unidad: receta.cantidad_por_unidad,
         obligatorio: receta.obligatorio,
-        creado_en: receta.creado_en,
-        actualizado_en: receta.actualizado_en,
+  creado_en: receta.creado_en,
         insumos: receta.insumos ? {
             id: receta.insumos.id,
             nombre: receta.insumos.nombre,

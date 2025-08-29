@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Download, Filter, RefreshCw, ShoppingCart, Calculator } from 'lucide-react'
+import { Download, Filter, RefreshCw, ShoppingCart } from 'lucide-react'
 import { VentaStatsCards } from '../components/ventas/VentaStatsCards'
 import { VentaTable } from '../components/ventas/VentaTable'
 import { VentaDetailModal } from '../components/ventas/VentaDetailModal'
