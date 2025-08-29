@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { recetaService } from '../services/RecetaService'
 import { productoService } from '../services/ProductoService'
-import { productionService } from '../services/ProductionService'
 import type { Producto } from '../types/productos'
 import type { ProductoReceta } from '../types/productos'
 import { RecetaEditor } from '../components/recetas/RecetaEditor'
 import { AgregarInsumoForm } from '../components/recetas/AgregarInsumoForm'
 import { RefreshCw, FlaskConical, Package, Info, Calculator } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { ProduccionModal } from '../components/recetas/ProduccionModal'
 
 const RecetasPage: React.FC = () => {
   const navigate = useNavigate()
@@ -85,24 +85,12 @@ const RecetasPage: React.FC = () => {
     await refresh()
   }
 
-  const [producing, setProducing] = useState(false)
+  const [producing] = useState(false)
+  const [showProduccionModal, setShowProduccionModal] = useState(false)
 
   const handleProduce = async () => {
     if (!productoId) return
-    const val = window.prompt('¿Cuántas unidades deseas producir?', '1')
-    if (val === null) return
-    const n = Number(val)
-    if (!Number.isFinite(n) || n <= 0) return
-    setProducing(true)
-    const res = await productionService.producirProducto(Number(productoId), n, null, 'Producción manual')
-    setProducing(false)
-    if (!res.ok) {
-      const msg = res.error || 'No se pudo producir'
-      const falt = res.faltantes?.map(f => `- ${f.nombre || f.insumo_id}: req ${f.requerido}, stock ${f.stock}`).join('\n')
-      window.alert(`${msg}${falt ? '\n\nFaltantes:\n' + falt : ''}`)
-      return
-    }
-    await refresh()
+    setShowProduccionModal(true)
   }
 
   // KPIs básicos
@@ -245,6 +233,16 @@ const RecetasPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Modal de producción */}
+      {productoId && (
+        <ProduccionModal
+          open={showProduccionModal}
+          onClose={() => setShowProduccionModal(false)}
+          productoId={Number(productoId)}
+          productoNombre={productoActual?.nombre}
+          onDone={async () => { await refresh() }}
+        />
+      )}
     </div>
   )
 }
