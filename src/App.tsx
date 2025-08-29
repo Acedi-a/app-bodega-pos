@@ -10,6 +10,7 @@ import { ProveedoresPage } from './pages/ProveedoresPage'
 import { ProductosPage } from './pages/ProductosPage'
 import { VentasPage } from './pages/VentasPage'
 import InventarioPage from './pages/InventarioPage'
+import InventarioInsumosPage from './pages/InventarioInsumosPage'
 import InsumosPage from './pages/InsumosPage'
 import RecetasPage from './pages/RecetasPage'
 import { DatabaseDebug } from './components/DatabaseDebug'
@@ -43,6 +44,7 @@ function App() {
             <Route path='productos' element={<ProductosPage />} />
             <Route path='ventas' element={<VentasPage />} />
             <Route path='inventario' element={<InventarioPage />} />
+            <Route path='inventario-insumos' element={<InventarioInsumosPage />} />
             <Route path='insumos' element={<InsumosPage />} />
             <Route path='recetas' element={<RecetasPage />} />
             {/* Aquí se agregarán más rutas */}

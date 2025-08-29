@@ -26,6 +26,7 @@ const menuItems = [
   { icon: Package, label: 'Insumos', path: '/insumos' },
   { icon: Factory, label: 'Recetas', path: '/recetas' },
   { icon: Factory, label: 'Inventario', path: '/inventario' },
+  { icon: Factory, label: 'Inventario Insumos', path: '/inventario-insumos' },
   { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
   { icon: CreditCard, label: 'Pedidos', path: '/pedidos' },
   { icon: AlertTriangle, label: 'Pérdidas', path: '/perdidas' },
